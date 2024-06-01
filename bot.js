@@ -1,41 +1,82 @@
+/* #region importing packages */
+const express = require('express');
+const session = require('express-session');
 const tmi = require('tmi.js');
+const axios = require('axios');
+const app = express();
+require('dotenv').config();
 
-const opts = {
-  identity: {
-    username: 'your_bot_username',
-    password: 'your_oauth_token'
-  },
-  channels: [
-    'channel_name'
-  ]
-};
+const PORT = 3055;
+const PARAMS = new URLSearchParams({
+	"response_type" : "code",
+	"client_id" : process.env.CLIENT_ID,
+	"redirect_uri" : process.env.REDIRECT_URI,
+	"scope" : "channel:bot channel:moderate chat:edit chat:read",
+  }).toString();
 
-const client = new tmi.client(opts);
+  app.use(session({
+	secret: '126139ab-378f-44c8-a529-7ef5dbe55f36',
+	resave: false,
+	saveUninitialized: false
+  }));
+/* #endregion importing packages */
 
-client.on('message', onMessageHandler);
-client.on('connected', onConnectedHandler);
+/* #region twitch bot connection */
+const client = new tmi.Client({
+	options: { debug: true },
+	identity: {
+		username: process.env.BOT_USERNAME,
+		password: process.env.OAUTH_TOKEN
+	},
+	channels: [ process.env.CHANNEL_NAME ]
+});
 
 client.connect();
+/* #endregion twitch bot connection*/
 
-function onMessageHandler (target, context, msg, self) {
-  if (self) { return; }
+/* #region routing */
+app.get("/", (req, res) => {
+  res.redirect(`https://id.twitch.tv/oauth2/authorize?${PARAMS}`);
+});
 
-  const commandName = msg.trim();
+app.get("/token", async (req, res) => {
+	try {
+		const { code } = req.query;
+		const tokenResponse = await axios.post('https://id.twitch.tv/oauth2/token', null, {
+			params: {
+				client_id: process.env.CLIENT_ID,
+				client_secret: process.env.CLIENT_SECRET,
+				code,
+				grant_type: 'authorization_code',
+				redirect_uri: process.env.REDIRECT_URI
+			}
+		});
+		const access_token = tokenResponse.data.access_token;
+		req.session.access_token = access_token;
+		res.redirect("/auth");
+	} catch (error) {
+		console.error('Error during authentication:', error);
+		res.status(500).send('Error during authentication');
+	}
+});
 
-  if (commandName === '!dice') {
-    const num = rollDice();
-    client.say(target, `You rolled a ${num}`);
-    console.log(`* Executed ${commandName} command`);
-  } else {
-    console.log(`* Unknown command ${commandName}`);
-  }
-}
+app.get("/auth", (req, res) => {
+	res.send({
+		data: {
+		access_token: req.session.access_token,
+		}
+	});
+});
+  
+app.listen(PORT, () => {
+	console.log("Listening on port: " + PORT + "!");
+});
+/* #endregion routing */
 
-function rollDice () {
-  const sides = 6;
-  return Math.floor(Math.random() * sides) + 1;
-}
+client.on('message', (channel, tags, message, self) => {
+	if(self) return;
 
-function onConnectedHandler (addr, port) {
-  console.log(`* Connected to ${addr}:${port}`);
-}
+	if(message.toLowerCase() === 'marco') {
+		client.say(channel, "polo");
+	}
+});
