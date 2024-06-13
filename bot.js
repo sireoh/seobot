@@ -105,8 +105,19 @@ client.on('message', (channel, tags, message, self) => {
 		client.say(channel, "test");
 	}
 
+	if(command === '!whofirst') {
+		client.say(channel, firstData[0] + " was first froogyBirthday");
+	}
+
 	if(command.startsWith('!titlegen')) {
-		titlegenCmd(channel, command);
+		if(
+			tags.badges.broadcaster
+		) {
+			titlegenCmd(channel, command);
+		} else {
+			console.log(tags);
+			client.say(channel, "hey .. you're not eoh 😡");
+		}
 	}
 });
 /* #endregion commands */
