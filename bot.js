@@ -1,6 +1,9 @@
 /* #region local database */
 var firstData = ["noone atm"];
 var titlegenData = [];
+const micStatus = ["mic ✅ audio ✅", "mic ❌ audio ✅"];
+var micStatusIndex = 0;
+var artTaxLink = "";
 /* #endregion local database */
 
 /* #region importing packages */
@@ -90,6 +93,17 @@ app.get("/first", (req, res) => {
 app.get("/titlegen", (req, res) => {
 	res.render("titlegen", {data: titlegenData[0]});
 });
+
+app.get("/micstatus", (req, res) => {
+	let i = micStatusIndex;
+	res.render("micStatus", {data: micStatus[i]});
+});
+
+app.get("/arttax", (req, res) => {
+	let img = displayArtTaxLink();
+	console.log(img);
+	res.render("artTax", {data: img});
+});
   
 app.listen(PORT, () => {
 	console.log("Listening on port: " + PORT + "!");
@@ -105,15 +119,60 @@ client.on('message', (channel, tags, message, self) => {
 		client.say(channel, "test");
 	}
 
+	if(command === 'how are u') {
+		client.say(channel, `eoh is well froogyComfy CatPat how is ${tags.username}? peepoFriendship`);
+	}
+
+	if(command === 'im gaming') {
+		client.say(channel, `/me ${tags.username} is really gaming froogyComfy`);
+	}
+
 	if(command === '!whofirst') {
 		client.say(channel, firstData[0] + " was first froogyBirthday");
 	}
 
 	if(command.startsWith('!titlegen')) {
 		if(
-			tags.badges.broadcaster
+			tags.badges.broadcaster ||
+			tags.username === 'eob0t_'
 		) {
 			titlegenCmd(channel, command);
+		} else {
+			console.log(tags);
+			client.say(channel, "hey .. you're not eoh 😡");
+		}
+	}
+
+	if(command.startsWith('!display') || command.startsWith('!arttax')) {
+		if(
+			tags.badges.broadcaster ||
+			tags.username === 'eob0t_'
+		) {
+			artTaxCmd(channel, command);
+		} else {
+			console.log(tags);
+			client.say(channel, "hey .. you're not eoh 😡");
+		}
+	}
+
+	if(command === '!micon') {
+		if(
+			tags.badges.broadcaster ||
+			tags.username === 'eob0t_'
+		) {
+			micOn(channel);
+		} else {
+			console.log(tags);
+			client.say(channel, "hey .. you're not eoh 😡");
+		}
+	}
+
+	if(command === '!micoff') {
+		if(
+			tags.badges.broadcaster ||
+			tags.username === 'eob0t_'
+		) {
+			micOff(channel);
 		} else {
 			console.log(tags);
 			client.say(channel, "hey .. you're not eoh 😡");
@@ -123,9 +182,6 @@ client.on('message', (channel, tags, message, self) => {
 /* #endregion commands */
 
 /* #region command logic */
-function firstCmd(channel, message) {
-	firstData[0] = message.split(" ")[1];
-}
 
 function titlegenCmd(channel, message) {
 	//Custom Title
@@ -159,31 +215,18 @@ function titlegenCmd(channel, message) {
 				custom: "false",
 				data: titlegenData[0]
 			});
+			micStatusIndex = 1;
 			break;
 		
 		case "toggleoff":
-			titlegenData[0] = "[mic off] " + titlegenData[1] + " "
-				+ titlegenData[2];
-				client.say(channel, `title shows mic "off" 🎤❌ now in overlay🖨`);
-			console.log({
-				mode: "off",
-				custom: "false",
-				data: titlegenData[0]
-			});
+			micOff(channel);
 			break;
 
 		case "toggleon":
-			titlegenData[0] = "[mic on] " + titlegenData[1] + " "
-				+ titlegenData[2];
-				client.say(channel, `title shows mic "on" 🎤✅ now in overlay🖨`);
-			console.log({
-				mode: "off",
-				custom: "false",
-				data: titlegenData[0]
-			});
+			micOn(channel);
 			break;
 		
-		case "customon":
+		case "custom":
 			titlegenData[2] = printEmojis();
 			titlegenData[0] = "[mic on] " + titlegenData[1] + " "
 				+ titlegenData[2];
@@ -193,6 +236,7 @@ function titlegenCmd(channel, message) {
 				custom: "true",
 				data: titlegenData[0]
 			});
+			micStatusIndex = 0;
 			break;
 
 		case "customoff":
@@ -205,6 +249,7 @@ function titlegenCmd(channel, message) {
 				custom: "true",
 				data: titlegenData[0]
 			});
+			micStatusIndex = 1;
 			break;
 
 		case "what":
@@ -228,7 +273,40 @@ function titlegenCmd(channel, message) {
 				custom: "false",
 				data: titlegenData[0]
 			});
+			micStatusIndex = 0;
 			break;
 	};
+}
+
+function artTaxCmd(channel, message) {
+	artTaxLink = message.split(" ")[1];
+}
+
+function micOn(channel) {
+	titlegenData[0] = "[mic on] " + titlegenData[1] + " "
+				+ titlegenData[2];
+				client.say(channel, `mic is now "on" 🎤✅ in overlay🖨`);
+			console.log({
+				mode: "off",
+				custom: "false",
+				data: titlegenData[0]
+			});
+	micStatusIndex = 0;
+}
+
+function micOff(channel) {
+	titlegenData[0] = "[mic off] " + titlegenData[1] + " "
+				+ titlegenData[2];
+				client.say(channel, `mic is now "off" 🎤❌ in overlay🖨`);
+			console.log({
+				mode: "off",
+				custom: "false",
+				data: titlegenData[0]
+			});
+	micStatusIndex = 1;
+}
+
+function displayArtTaxLink() {
+	return artTaxLink;
 }
 /* #endregion command logic */
